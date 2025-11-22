@@ -1,10 +1,7 @@
-Here is the complete content formatted strictly as a **Markdown** file. You can copy the block below and save it as `README.md`.
-
 # 🎤 AI Speech Coach
 
 **AI Speech Coach** is a Python-based evaluation tool designed to help students and professionals improve their public speaking. By analyzing a speech transcript and its duration, the tool provides a comprehensive score (out of 100), actionable feedback on grammar, and a downloadable HTML report card.
 
-![AI Speech Coach Workflow](https://via.placeholder.com/800x200?text=AI+Speech+Coach+Workflow)
 
 ## 🌟 Key Features
 
@@ -14,7 +11,6 @@ Here is the complete content formatted strictly as a **Markdown** file. You can 
 * **Engagement Analysis:** Uses Large Language Models (LLM) to detect the sentiment and emotional tone of the speech.
 * **Downloadable Reports:** Generates a `ZIP` package containing a visual HTML report, a CSV of scores, and raw analysis data.
 
----
 
 ## 🧠 Scoring Formula (Total: 100 Points)
 
