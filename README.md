@@ -1,6 +1,5 @@
 Here is the complete content formatted strictly as a **Markdown** file. You can copy the block below and save it as `README.md`.
 
-````markdown
 # 🎤 AI Speech Coach
 
 **AI Speech Coach** is a Python-based evaluation tool designed to help students and professionals improve their public speaking. By analyzing a speech transcript and its duration, the tool provides a comprehensive score (out of 100), actionable feedback on grammar, and a downloadable HTML report card.
@@ -49,7 +48,6 @@ Calculated using the formula: `(Word Count / Duration in Seconds) * 60`.
     * **Neutral/Professional:** 12 Points
     * **Negative/Robotic:** < 9 Points
 
----
 
 ## 🚀 Deployment & Run Instructions
 
