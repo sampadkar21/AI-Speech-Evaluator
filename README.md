@@ -1,6 +1,6 @@
 # 🎤 AI Speech Coach: Intelligent Speaking Evaluation System
 
-(<img width="2752" height="1536" alt="image" src="https://github.com/user-attachments/assets/1dd2681a-242f-40de-9c41-ba7c500f5ba0" />
+<img width="2752" height="1536" alt="image" src="https://github.com/user-attachments/assets/1dd2681a-242f-40de-9c41-ba7c500f5ba0" />
 
 ## 📋 Overview
 
