@@ -10,7 +10,7 @@ It analyzes content structure, grammatical precision, vocabulary richness, and e
 
 The application follows a modular architecture, separating the presentation layer (Gradio) from the analysis logic (Spacy/Groq).
 
-
+![img](architecture_diagram)
 
 ## 🚀 Key Technical Features
 
@@ -112,11 +112,11 @@ python app.py
 
 ```text
 AI-Speech-Coach/
-├── app.py                   # Main application entry point (Gradio + Logic)
-├── requirements.txt         # Python dependencies
-├── README.md                # Documentation
-├── architecture_diagram.png # System visual
-└── outputs/                 # Generated HTML reports (created at runtime)
+├── app.py                  
+├── requirements.txt        
+├── README.md                
+├── architecture_diagram.png 
+└── outputs/                 
 ```
 
 ## ⚖️ Design Decisions & Trade-offs
