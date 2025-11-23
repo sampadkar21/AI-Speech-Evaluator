@@ -19,15 +19,19 @@ except:
 
 # --- 2. DATA MODELS ---
 class Salutation(BaseModel):
-    phrase_used: str = Field(..., description="The exact opening phrase used by the speaker (e.g., 'Hello everyone', 'Hi').")
+    phrase_used: str = Field(
+        ..., 
+        description="Extract exactly the first 3-5 words of the transcript. Do not search for greetings elsewhere. Example: 'I am 14 years', 'Hello everyone, I'."
+    )
+    
     level: Literal["No Salutation", "Normal", "Good", "Excellent"] = Field(
         ..., 
         description=(
-            "Assess the quality of the opening:\n"
-            "- 'No Salutation': Starts immediately with content.\n"
-            "- 'Normal': Simple 'Hi', 'Hello', 'Hey'.\n"
-            "- 'Good': 'Good Morning', 'Good Afternoon', or inclusive 'Hello everyone'.\n"
-            "- 'Excellent': Enthusiastic openers like 'Excited to be here', 'It's an honor to speak'."
+            "Evaluate ONLY the 'phrase_used' extracted above.\n"
+            "- 'No Salutation': If the phrase starts with content (e.g., 'I am', 'My name', 'Today').\n"
+            "- 'Normal': If the phrase starts with 'Hi', 'Hello', 'Hey'.\n"
+            "- 'Good': If the phrase starts with 'Good Morning' or 'Hello everyone'.\n"
+            "- 'Excellent': If the phrase starts with enthusiastic openers."
         )
     )
 
@@ -74,6 +78,7 @@ class GrammarError(BaseModel):
 
 class GrammarAnalysis(BaseModel):
     errors: List[GrammarError] = Field(
+        default_factory=list,
         description="A list of OBJECTIVE grammatical errors."
     )
     
@@ -107,73 +112,20 @@ class EvaluationResult(BaseModel):
     grammar: GrammarAnalysis
     engagement: Engagement
 
-
-class GrammarError(BaseModel):
-    error_text: str = Field(..., description="The incorrect phrase extracted from the speech.")
-    correction: str = Field(..., description="Corrected phrase rewritten using proper grammar.")
-    reason: str = Field(..., description="Short explanation of the grammar rule violated.")
-
-
-class GrammarAnalysis(BaseModel):
-    errors: List[GrammarError] = Field(
-        default_factory=list,
-        description="List of grammar mistakes detected by the LLM."
-    )
-
-    def calculate_score(self, total_words: int) -> int:
-        if total_words == 0:
-            return 0
-        raw = 1 - min((10 * len(self.errors)) / total_words, 1)
-        if raw >= 0.9: return 10
-        elif 0.7 <= raw < 0.9: return 8
-        elif 0.5 <= raw < 0.7: return 6
-        elif 0.3 <= raw < 0.5: return 4
-        return 2
-
-
-class Engagement(BaseModel):
-    sentiment_label: Literal["Positive", "Neutral", "Negative"] = Field(
-        ..., description="Overall sentiment of the speech."
-    )
-    positivity_probability: float = Field(
-        ..., description="Model confidence that the tone is positive."
-    )
-
-    @computed_field
-    def eng_score(self) -> int:
-        v = self.positivity_probability
-        if v >= 0.9: return 15
-        elif 0.7 <= v < 0.9: return 12
-        elif 0.5 <= v < 0.7: return 9
-        elif 0.3 <= v < 0.5: return 6
-        return 3
-
-
-class EvaluationResult(BaseModel):
-    salutation: Salutation
-    basic_details: BasicDetails
-    extra_details: ExtraDetails
-    flow: FlowSequence
-    grammar: GrammarAnalysis
-    engagement: Engagement
-
 # --- 3. HTML REPORT GENERATOR ---
 def generate_html_report(total_score, wpm, speech_cat, df, analysis_data):
     """
     Generates a single HTML file containing the Scorecard and the formatted Details.
     """
     
-    # 1. Generate Score Table Rows
     score_rows = ""
     for _, row in df.iterrows():
         score_rows += f"<tr><td>{row['Category']}</td><td>{row['Metric']}</td><td><strong>{row['Score']}</strong> / {row['Max']}</td></tr>"
 
-    # 2. Format Basic Details Lists
     def format_list(item):
         if isinstance(item, list): return ", ".join(item)
         return item if item else "<em>Not mentioned</em>"
 
-    # 3. Format Grammar Errors
     grammar_html = ""
     if not analysis_data.grammar.errors:
         grammar_html = "<div class='success-box'>✅ Great job! No major grammar errors detected.</div>"
@@ -187,7 +139,6 @@ def generate_html_report(total_score, wpm, speech_cat, df, analysis_data):
             </div>
             """
 
-    # 4. Build the Full HTML
     html = f"""
     <!DOCTYPE html>
     <html>
@@ -320,26 +271,80 @@ def analyze_speech(api_key, transcript, duration_seconds):
         # --- GROQ LLM CALL ---
         SYSTEM_PROMPT = """
         You are an expert Linguistic Evaluator and Speech Coach AI. 
-        Your task is to analyze the provided speech transcript and extract structured data regarding the speaker's content, grammar, and engagement.
+        Your task is to analyze the given speech transcript and extract structured information about the speaker’s content, grammar clarity, and engagement.
 
-        You must output a JSON object that strictly adheres to the schema provided below.
+        Your output MUST be a JSON object that strictly follows the schema provided at the end.
+        Do not add or omit any fields. 
+        If a field is not explicitly present in the transcript, return null for that field.
+        Never guess or infer missing information.
 
-        ### INSTRUCTIONS FOR EXTRACTION:
+        ----------------------------------
+        ### EXTRACTION GUIDELINES
+        ----------------------------------
 
-        1. **Salutation**: Identify how the speaker opens. Rank the quality based on warmth and professionalism.
-        2. **Basic Details**: Extract factual datas such as name, age, school, class, hobbies. 
-        3. **Extra Details**: Look for qualitative descriptors (adjectives about family), origin, ambitions, unique facts and strengths.
-        4. **Flow**: Check if the speech has a logical beginning (Greeting), middle (Content), and end (Closing/Thanks).
-        5. **Grammar**: Identify only major grammatical errors that affect clarity or correctness. Ignore minor conversational mistakes.
-        6. **Engagement**: Analyze the sentiment. Is the speaker sharing personal details enthusiastically?
+        1. **Salutation**
+        - Extract EXACTLY the first 3–5 words of the transcript for `phrase_used`.
+        - Rate salutation quality based ONLY on this extracted phrase.
+        - Ignore greetings found later in the text.
 
-        ### OUTPUT SCHEMA:
+        2. **Basic Details**
+        Extract only explicit facts mentioned by the speaker:
+        - Name (e.g., “Myself X”, “I am X”)
+        - Age (“I am 12 years old”)
+        - School / Class / Academic section
+        - Family members (mother, father, brother, sister)
+        - Hobbies (only if clearly stated)
+
+        Never infer details not mentioned.
+
+        3. **Extra Details**
+        Extract deeper descriptive information:
+        - Adjectives about family (supportive, strict, kind-hearted)
+        - Origin (City/State/Country)
+        - Ambition or career goal
+        - Any unique or surprising fact
+        - Strengths or favorite subjects
+
+        4. **Flow**
+        Determine if the transcript clearly follows:
+        Greeting → Introduction → Additional Details → Closing/Thank you
+
+        Return either:
+        - true
+        - false  
+        (no other formats)
+
+        5. **Grammar (Strict Rules)**: Identify ONLY meaningful grammatical errors that affect clarity in speech
+
+        DO NOT count as errors:
+        - Punctuation (spoken transcript)
+        - Fillers (“um”, “uh”)
+        - Spoken contractions (“I’m”, “don’t”)
+        - Accent variations
+        - Missing hyphens in compound words
+
+        For each valid error:
+        - Provide the exact incorrect phrase
+        - Provide the corrected phrase
+        - Give a brief linguistic reason
+
+        Do NOT invent or hallucinate errors.
+
+        6. **Engagement**
+        - Label tone as Positive, Neutral, or Negative.
+        - Estimate positivity probability from 0.0 to 1.0 based on enthusiasm and emotional cues only.
+
+        ----------------------------------
+        ### REQUIRED OUTPUT FORMAT
+        ----------------------------------
+        Your output MUST strictly follow this JSON schema:
+
         {schema}
         """.format(schema=json.dumps(EvaluationResult.model_json_schema(), indent=2))
         
         client = Groq(api_key=api_key)
         completion = client.chat.completions.create(
-            model="openai/gpt-oss-120b",
+            model="llama-3.3-70b-versatile",
             temperature=0.0,
             response_format={"type": "json_object"},
             messages=[
@@ -389,7 +394,7 @@ def analyze_speech(api_key, transcript, duration_seconds):
 
 # --- 5. UI ---
 with gr.Blocks(theme=gr.themes.Soft(), title="AI Speech Coach") as demo:
-    gr.Markdown("# 🎤 AI Speech Coach (Local)")
+    gr.Markdown("# 🎤 AI Speech Coach")
     gr.Markdown("Paste your speech, enter your Groq API Key, and get a professional HTML report.")
     
     with gr.Row():
