@@ -10,7 +10,7 @@ It analyzes content structure, grammatical precision, vocabulary richness, and e
 
 The application follows a modular architecture, separating the presentation layer (Gradio) from the analysis logic (Spacy/Groq).
 
-![img](architecture_diagram)
+![img](architecture_diagram.png)
 
 ## 🚀 Key Technical Features
 
