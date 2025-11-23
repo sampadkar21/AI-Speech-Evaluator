@@ -1,127 +1,131 @@
-# 🎤 AI Speech Coach
+# 🎤 AI Speech Coach: Intelligent Speaking Evaluation System
 
-**AI Speech Coach** is a Python-based evaluation tool designed to help students and professionals improve their public speaking. By analyzing a speech transcript and its duration, the tool provides a comprehensive score (out of 100), actionable feedback on grammar, and a downloadable HTML report card.
+## 📋 Overview
 
+**AI Speech Coach** is a sophisticated Natural Language Processing (NLP) tool designed to democratize public speaking coaching. Unlike simple WPM counters, this system leverages **Large Language Models (LLMs)** and **Transformer-based NLP pipelines** to provide a holistic evaluation of a speech.
 
-## 🌟 Key Features
+It analyzes content structure, grammatical precision, vocabulary richness, and emotional engagement to generate professional, actionable feedback reports.
 
-* **Automated Scoring Engine:** Calculates a weighted score based on content, speed, and tone.
-* **Speech Rate Analysis:** Computes Words Per Minute (WPM) and categorizes pacing (e.g., "Too Fast," "Ideal").
-* **Grammar & Syntax Check:** Identifies grammatical errors using NLP and suggests corrections.
-* **Engagement Analysis:** Uses Large Language Models (LLM) to detect the sentiment and emotional tone of the speech.
-* **Downloadable Reports:** Generates a `ZIP` package containing a visual HTML report, a CSV of scores, and raw analysis data.
+## 🏗️ System Architecture
 
+The application follows a modular architecture, separating the presentation layer (Gradio) from the analysis logic (Spacy/Groq).
 
-## 🧠 Scoring Formula (Total: 100 Points)
+*(Note: Architecture diagram illustrating the data flow from user input through the NLP pipeline to the final report)*
 
-The final score is an aggregate of 5 distinct categories. The logic is hard-coded to ensure consistency.
+## 🚀 Key Technical Features
 
-### 1. Content & Structure (30 Points)
-Evaluates if the speech follows a logical format.
-* **Salutation (5 pts):** Rated on warmth and professionalism (e.g., "Hello everyone" = Good; No greeting = 0).
-* **Key Details (20 pts):** Scans for 5 essential elements: Name, Age, Class/Job, Family context, and Hobbies (+4 points for each detail found).
-* **Flow (5 pts):** +5 points if the speech follows a logical order (Introduction → Body → Conclusion).
+### 1\. Hybrid NLP Pipeline
 
-### 2. Speech Rate (10 Points)
-Calculated using the formula: `(Word Count / Duration in Seconds) * 60`.
-* **Ideal (111 - 140 WPM):** 10 Points
-* **Acceptable (81 - 110 WPM *or* 141 - 160 WPM):** 6 Points
-* **Poor (< 80 WPM *or* > 160 WPM):** 2 Points
+The system utilizes a dual-engine approach for maximum accuracy:
 
-### 3. Language & Grammar (20 Points)
-* **Vocabulary Richness (10 pts):** Calculated based on Type-Token Ratio (Unique words / Total words). High variety yields higher scores.
-* **Grammar Accuracy (10 pts):** Points are deducted based on the density of grammatical errors found by the LLM relative to the total word count.
+  * **Spacy (`en_core_web_trf`):** A transformer-based pipeline is used for deterministic linguistic tasks (Tokenization, Filler word detection, Vocabulary density).
+  * **Groq API (LLM):** Handles high-level cognitive tasks such as Sentiment Analysis, Structural Flow evaluation, and Context-aware Grammar correction.
 
-### 4. Clarity (15 Points)
-* **Filler Word Detection:** Scans for hesitation markers (e.g., "um", "uh", "like", "you know").
-* **Scoring:**
-    * **15 pts:** If filler words constitute < 3% of the speech.
-    * **12 pts:** If filler words constitute > 3%.
+### 2\. Robust Data Validation (Pydantic)
 
-### 5. Engagement (15 Points)
-* **Sentiment Analysis:** The LLM analyzes the overall tone.
-    * **Positive/Enthusiastic:** 15 Points
-    * **Neutral/Professional:** 12 Points
-    * **Negative/Robotic:** < 9 Points
+The application enforces strict schema validation using **Pydantic**.
 
+  * Ensures the LLM outputs structured JSON data (not hallucinations).
+  * Uses `computed_fields` to automatically derive scores from raw data, ensuring mathematical consistency across the rubric.
 
-## 🚀 Deployment & Run Instructions
+### 3\. Automated Reporting
 
-Follow these steps to run the application on your local machine.
+Generates a self-contained, CSS-styled HTML report that visualizes the breakdown of:
+
+  * **Content Mastery:** Salutation, Introduction, and Conclusion flow.
+  * **Linguistic Precision:** Grammar error correction with "Wrong vs. Right" comparisons.
+  * **Engagement Metrics:** Tone analysis and positivity probability.
+
+## 📊 Scoring Algorithm
+
+The scoring engine aggregates 100 points across 5 weighted dimensions:
+
+| Category | Weight | Logic |
+| :--- | :--- | :--- |
+| **Content Structure** | **30%** | Evaluates the logical progression (Intro $\to$ Body $\to$ Outro) and extraction of key persona details. |
+| **Language & Grammar** | **20%** | Penalties applied for grammatical errors detected by the LLM; rewards for high Type-Token Ratio (TTR). |
+| **Clarity (Fillers)** | **15%** | Inverse scoring based on the frequency of hesitation markers (*"um", "uh", "like"*). |
+| **Engagement** | **15%** | Sentiment analysis probability score (Positive tone \> 0.9 confidence = Max score). |
+| **Speech Rate** | **10%** | Gaussian-style scoring centering around the ideal range of **111-140 WPM**. |
+
+*Note: Scores are normalized to integer values to ensure readability.*
+
+## 🛠️ Tech Stack
+
+  * **Language:** Python 3.9+
+  * **Interface:** Gradio (Rapid prototyping UI)
+  * **LLM Serving:** Groq Cloud API (Low latency inference)
+  * **NLP:** Spacy (Transformer pipeline)
+  * **Data Engineering:** Pandas (Dataframe manipulation), Pydantic (Schema validation)
+  * **Utilities:** Regular Expressions (Regex)
+
+## 💻 Installation & Setup
 
 ### Prerequisites
-1.  **Python 3.9** or higher installed.
-2.  A **Groq API Key**. (You can get a free key at [console.groq.com](https://console.groq.com)).
 
-### Step 1: Clone the Repository
-Open your terminal or command prompt and run:
+  * Python 3.9 or higher
+  * A Groq API Key (Available at [console.groq.com](https://console.groq.com))
 
-```bash
-git clone [https://github.com/YOUR_USERNAME/AI-Speech-Coach.git](https://github.com/YOUR_USERNAME/AI-Speech-Coach.git)
-cd AI-Speech-Coach
-````
-
-### Step 2: Create a Virtual Environment (Recommended)
-
-It is best practice to run Python apps in an isolated environment.
-
-**Windows:**
+### Step 1: Clone Repository
 
 ```bash
-python -m venv venv
-venv\Scripts\activate
+git clone https://github.com/your-username/ai-speech-coach.git
+cd ai-speech-coach
 ```
 
-**Mac/Linux:**
+### Step 2: Configure Environment
+
+It is recommended to use a virtual environment.
 
 ```bash
-python3 -m venv venv
+# Windows
+python -m venv venv
+venv\Scripts\activate
+
+# Mac/Linux
 source venv/bin/activate
 ```
 
-### Step 3: Install Python Dependencies
-
-Install the required libraries listed in `requirements.txt`.
+### Step 3: Install Dependencies
 
 ```bash
 pip install -r requirements.txt
 ```
 
-### Step 4: Download the NLP Model
+### Step 4: Download NLP Models
 
-This application uses the Spacy Transformer pipeline. You must download this model separately after installing the requirements.
+This project uses the accuracy-focused transformer model for Spacy. **Note:** The `--direct` flag is essential for correct local installation.
 
 ```bash
 python -m spacy download en_core_web_trf --direct
 ```
 
-### Step 5: Run the Application
-
-Start the Gradio server.
+### Step 5: Run Application
 
 ```bash
 python app.py
 ```
 
-### Step 6: Access the App
+*The application will launch locally at `http://127.0.0.1:7860`*
 
-After running the command, your terminal will display a local URL, typically:
-`http://127.0.0.1:7860`
+## 📂 Project Structure
 
-Open this link in your web browser to use the AI Speech Coach.
+```text
+AI-Speech-Coach/
+├── app.py                   # Main application entry point (Gradio + Logic)
+├── requirements.txt         # Python dependencies
+├── README.md                # Documentation
+├── architecture_diagram.png # System visual
+└── outputs/                 # Generated HTML reports (created at runtime)
+```
+
+## 🔮 Future Roadmap
+
+  * **Audio Signal Processing:** Integrate `Librosa` to analyze pitch variation and monotonic delivery.
+  * **Speech-to-Text Integration:** Add `Whisper` model for real-time audio transcription instead of manual text input.
+  * **User Dashboard:** Transition to a Streamlit/React frontend to save historical user progress.
+
 
 -----
 
-
-## 🛠️ Tech Stack
-
-  * **Frontend:** [Gradio](https://www.gradio.app/) (Web Interface)
-  * **LLM Integration:** [Groq API](https://groq.com/) (Llama-3-70b-Versatile)
-  * **NLP Processing:** [Spacy](https://spacy.io/) (`en_core_web_trf`)
-  * **Data Validation:** Pydantic
-  * **Data Handling:** Pandas
-
-<!-- end list -->
-
-```
-```
+*Developed for the [Insert Internship Program Name] Assessment.*
