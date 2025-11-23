@@ -1,5 +1,7 @@
 # 🎤 AI Speech Coach: Intelligent Speaking Evaluation System
 
+![img](<img width="2752" height="1536" alt="image" src="https://github.com/user-attachments/assets/1dd2681a-242f-40de-9c41-ba7c500f5ba0" />
+
 ## 📋 Overview
 
 **AI Speech Coach** is a sophisticated Natural Language Processing (NLP) tool designed to democratize public speaking coaching. Unlike simple WPM counters, this system leverages **Large Language Models (LLMs)** and **Transformer-based NLP pipelines** to provide a holistic evaluation of a speech.
