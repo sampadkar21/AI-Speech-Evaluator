@@ -19,60 +19,77 @@ except:
 
 # --- 2. DATA MODELS ---
 class Salutation(BaseModel):
-    phrase_used: str = Field(..., description="The exact opening phrase.")
-    level: Literal["No Salutation", "Normal", "Good", "Excellent"]
+    phrase_used: str = Field(..., description="The exact opening phrase used by the speaker (e.g., 'Hello everyone', 'Hi').")
+    level: Literal["No Salutation", "Normal", "Good", "Excellent"] = Field(
+        ..., 
+        description=(
+            "Assess the quality of the opening:\n"
+            "- 'No Salutation': Starts immediately with content.\n"
+            "- 'Normal': Simple 'Hi', 'Hello', 'Hey'.\n"
+            "- 'Good': 'Good Morning', 'Good Afternoon', or inclusive 'Hello everyone'.\n"
+            "- 'Excellent': Enthusiastic openers like 'Excited to be here', 'It's an honor to speak'."
+        )
+    )
+
     @computed_field
     def sal_score(self) -> int:
         mapping = {"No Salutation": 0, "Normal": 2, "Good": 4, "Excellent": 5}
         return mapping.get(self.level, 0)
 
 class BasicDetails(BaseModel):
-    name: Optional[str] = None
-    age: Optional[str] = None
-    school_class: Optional[List[str]] = None
-    family: Optional[str] = None
-    hobbies: Optional[List[str]] = None
+    name: Optional[str] = Field(None, description="The speaker's name. Look for 'Myself X', 'I am X'.")
+    age: Optional[str] = Field(None, description="The speaker's age, extracted usually as a number near 'years old'.")
+    school_class: Optional[List[str]] = Field(None, description="Educational details: Class/Grade and School Name. If adult, Job Title and Company.")
+    family: Optional[str] = Field(None, description="Who constitutes the family structure (e.g., 'mother, father, me'). Do not describe personalities here.")
+    hobbies: Optional[List[str]] = Field(None, description="Specific activities the speaker claims to enjoy or play (e.g., 'cricket', 'reading').")
+
     @computed_field
     def bd_score(self) -> int:
         found = [self.name, self.age, self.school_class, self.family, self.hobbies]
         return sum(1 for item in found if item) * 4
 
 class ExtraDetails(BaseModel):
-    about_family: Optional[str] = None
-    origin: Optional[str] = None
-    ambition: Optional[str] = None
-    unique_fact: Optional[str] = None
-    strengths: Optional[List[str]] = None
+    about_family: Optional[str] = Field(None, description="Qualitative descriptions of the family (e.g., 'kind hearted', 'strict', 'supportive').")
+    origin: Optional[str] = Field(None, description="Geographical origin or residence (City/State/Country).")
+    ambition: Optional[str] = Field(None, description="Future goals, career aspirations, or broad desires (e.g., 'explore the world', 'become a doctor').")
+    unique_fact: Optional[str] = Field(None, description="A specific fun fact, secret, or unique habit mentioned (e.g., 'talk to mirror', 'stole a toy').")
+    strengths: Optional[List[str]] = Field(None, description="Self-identified strengths or favorite subjects that imply skill (e.g., 'Science is favorite', 'good at math').")
+
     @computed_field
     def ed_score(self) -> int:
         found = [self.about_family, self.origin, self.ambition, self.unique_fact, self.strengths]
         return sum(1 for item in found if item) * 2
 
 class FlowSequence(BaseModel):
-    is_order_followed: bool
+    is_order_followed: bool = Field(..., description="Boolean: True ONLY if the speech follows: Greeting -> Bio/Intro -> Details -> Closing (Thank you).")
+    
     @computed_field
     def flow_score(self) -> int:
         return 5 if self.is_order_followed else 0
-
+    
 class GrammarError(BaseModel):
-    error_text: str
-    correction: str
-    reason: str
+    error_text: str = Field(..., description="The exact snippet from the text containing the error.")
+    correction: str = Field(..., description="The grammatically correct version.")
+    reason: str = Field(..., description="Linguistic explanation (e.g., 'Subject-Verb Agreement', 'Incorrect Pronoun Usage', 'Tense Mismatch').")
 
 class GrammarAnalysis(BaseModel):
-    errors: List[GrammarError] = Field(default_factory=list)
+    errors: List[GrammarError] = Field(
+        description="A list of OBJECTIVE grammatical errors."
+    )
+    
     def calculate_score(self, total_words: int) -> int:
         if total_words == 0: return 0
-        raw = 1 - min((10 * len(self.errors)) / total_words, 1)
-        if raw >= 0.9: return 10
-        elif 0.7 <= raw < 0.9: return 8
-        elif 0.5 <= raw < 0.7: return 6
-        elif 0.3 <= raw < 0.5: return 4
+        raw_score = 1 - min((10 * len(self.errors)) / total_words, 1)
+        if raw_score >= 0.9: return 10
+        elif 0.7 <= raw_score < 0.9: return 8
+        elif 0.5 <= raw_score < 0.7: return 6
+        elif 0.3 <= raw_score < 0.5: return 4
         return 2
-
+    
 class Engagement(BaseModel):
-    sentiment_label: Literal["Positive", "Neutral", "Negative"]
-    positivity_probability: float
+    sentiment_label: Literal["Positive", "Neutral", "Negative"] = Field(..., description="Overall tone: 'Positive' (Enthusiastic, Hopeful), 'Neutral' (Factual, Robotic), 'Negative' (Sad, Complaining).")
+    positivity_probability: float = Field(..., description="A float between 0.0 and 1.0 representing the confidence that the tone is positive/engaging.")
+
     @computed_field
     def eng_score(self) -> int:
         val = self.positivity_probability
@@ -81,6 +98,56 @@ class Engagement(BaseModel):
         elif 0.5 <= val < 0.7: return 9
         elif 0.3 <= val < 0.5: return 6
         return 3
+    
+class EvaluationResult(BaseModel):
+    salutation: Salutation
+    basic_details: BasicDetails
+    extra_details: ExtraDetails
+    flow: FlowSequence
+    grammar: GrammarAnalysis
+    engagement: Engagement
+
+
+class GrammarError(BaseModel):
+    error_text: str = Field(..., description="The incorrect phrase extracted from the speech.")
+    correction: str = Field(..., description="Corrected phrase rewritten using proper grammar.")
+    reason: str = Field(..., description="Short explanation of the grammar rule violated.")
+
+
+class GrammarAnalysis(BaseModel):
+    errors: List[GrammarError] = Field(
+        default_factory=list,
+        description="List of grammar mistakes detected by the LLM."
+    )
+
+    def calculate_score(self, total_words: int) -> int:
+        if total_words == 0:
+            return 0
+        raw = 1 - min((10 * len(self.errors)) / total_words, 1)
+        if raw >= 0.9: return 10
+        elif 0.7 <= raw < 0.9: return 8
+        elif 0.5 <= raw < 0.7: return 6
+        elif 0.3 <= raw < 0.5: return 4
+        return 2
+
+
+class Engagement(BaseModel):
+    sentiment_label: Literal["Positive", "Neutral", "Negative"] = Field(
+        ..., description="Overall sentiment of the speech."
+    )
+    positivity_probability: float = Field(
+        ..., description="Model confidence that the tone is positive."
+    )
+
+    @computed_field
+    def eng_score(self) -> int:
+        v = self.positivity_probability
+        if v >= 0.9: return 15
+        elif 0.7 <= v < 0.9: return 12
+        elif 0.5 <= v < 0.7: return 9
+        elif 0.3 <= v < 0.5: return 6
+        return 3
+
 
 class EvaluationResult(BaseModel):
     salutation: Salutation
@@ -254,14 +321,25 @@ def analyze_speech(api_key, transcript, duration_seconds):
         SYSTEM_PROMPT = """
         You are an expert Linguistic Evaluator and Speech Coach AI. 
         Your task is to analyze the provided speech transcript and extract structured data regarding the speaker's content, grammar, and engagement.
+
         You must output a JSON object that strictly adheres to the schema provided below.
+
+        ### INSTRUCTIONS FOR EXTRACTION:
+
+        1. **Salutation**: Identify how the speaker opens. Rank the quality based on warmth and professionalism.
+        2. **Basic Details**: Extract factual datas such as name, age, school, class, hobbies. 
+        3. **Extra Details**: Look for qualitative descriptors (adjectives about family), origin, ambitions, unique facts and strengths.
+        4. **Flow**: Check if the speech has a logical beginning (Greeting), middle (Content), and end (Closing/Thanks).
+        5. **Grammar**: Identify only major grammatical errors that affect clarity or correctness. Ignore minor conversational mistakes.
+        6. **Engagement**: Analyze the sentiment. Is the speaker sharing personal details enthusiastically?
+
         ### OUTPUT SCHEMA:
         {schema}
         """.format(schema=json.dumps(EvaluationResult.model_json_schema(), indent=2))
         
         client = Groq(api_key=api_key)
         completion = client.chat.completions.create(
-            model="llama-3.3-70b-versatile",
+            model="openai/gpt-oss-120b",
             temperature=0.0,
             response_format={"type": "json_object"},
             messages=[
@@ -281,7 +359,7 @@ def analyze_speech(api_key, transcript, duration_seconds):
         
         df_data = [
             ["Content", "Salutation", sal_score, 5],
-            ["Content", "Key Details", kw_score, 20],
+            ["Content", "Key Details", kw_score, 30],
             ["Content", "Flow", flow_score, 5],
             ["Speech Rate", f"{wpm} WPM ({speech_cat})", speech_score, 10],
             ["Language", "Grammar", grammar_score, 10],
