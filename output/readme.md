@@ -1,4 +1,4 @@
-# View Sample Reports 
+# Sample Reports 
 
 ---
 
