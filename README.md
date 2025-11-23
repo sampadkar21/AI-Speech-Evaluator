@@ -10,7 +10,7 @@ It analyzes content structure, grammatical precision, vocabulary richness, and e
 
 The application follows a modular architecture, separating the presentation layer (Gradio) from the analysis logic (Spacy/Groq).
 
-*(Note: Architecture diagram illustrating the data flow from user input through the NLP pipeline to the final report)*
+
 
 ## 🚀 Key Technical Features
 
@@ -119,13 +119,8 @@ AI-Speech-Coach/
 └── outputs/                 # Generated HTML reports (created at runtime)
 ```
 
-## 🔮 Future Roadmap
+## ⚖️ Design Decisions & Trade-offs
 
-  * **Audio Signal Processing:** Integrate `Librosa` to analyze pitch variation and monotonic delivery.
-  * **Speech-to-Text Integration:** Add `Whisper` model for real-time audio transcription instead of manual text input.
-  * **User Dashboard:** Transition to a Streamlit/React frontend to save historical user progress.
-
-
------
-
-*Developed for the [Insert Internship Program Name] Assessment.*
+* **Spacy TRF vs. Light Models:** I chose the `en_core_web_trf` (Transformer) pipeline over lighter models (`en_core_web_sm`) to maximize Part-of-Speech (POS) tagging accuracy. While this increases memory usage, it ensures the "Word Count" and "Filler Word" detection is robust against complex sentence structures.
+* **Deterministic vs. Generative Scoring:** The scoring logic uses `Pydantic` validation to force the LLM into a strict schema. This decision was made to prevent "hallucinated" scores. If the LLM fails to return a valid JSON, the system fails gracefully rather than outputting a random number.
+* **Groq vs. Standard APIs:** Groq was selected for the inference engine due to its superior tokens-per-second (TPS) performance, which is critical for maintaining a responsive user experience in a real-time feedback tool.
