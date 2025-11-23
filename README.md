@@ -92,7 +92,7 @@ pip install -r requirements.txt
 This application uses the Spacy Transformer pipeline. You must download this model separately after installing the requirements.
 
 ```bash
-python -m spacy download en_core_web_trf
+python -m spacy download en_core_web_trf --direct
 ```
 
 ### Step 5: Run the Application
